@@ -8,6 +8,7 @@ export default function ChessBoard() {
   const [fen, setFen] = useState(chess.fen());
   const [legalMoves, setLegalMoves] = useState([]);
   const [draggingSquare, setDraggingSquare] = useState(null);
+  const [selectedSquare, setSelectedSquare] = useState(null);
   const [darkMode, setDarkMode] = useState(true);
 
   const pieceImages = {
@@ -43,6 +44,7 @@ export default function ChessBoard() {
   const board = fenToBoard(fen);
   const toSquare = (row, col) => "abcdefgh"[col] + (8 - row);
 
+  // DRAG-AND-DROP
   const handleDragStart = (row, col) => {
     const square = toSquare(row, col);
     const piece = board[row][col];
@@ -68,8 +70,37 @@ export default function ChessBoard() {
     setLegalMoves([]);
   };
 
+  // CLICK-TO-MOVE
+  const handleSquareClick = (row, col) => {
+    const square = toSquare(row, col);
+    const piece = board[row][col];
+    const turn = chess.turn();
+
+    // Selecting a piece
+    if (piece) {
+      const pieceLetter = Object.keys(pieceImages).find((key) => pieceImages[key] === piece);
+      if ((turn === "w" && pieceLetter === pieceLetter.toUpperCase()) ||
+          (turn === "b" && pieceLetter === pieceLetter.toLowerCase())) {
+        setSelectedSquare(square);
+        const moves = chess.moves({ square, verbose: true }).map(m => m.to);
+        setLegalMoves(moves);
+        return;
+      }
+    }
+
+    // Moving a piece
+    if (selectedSquare && legalMoves.includes(square)) {
+      chess.move({ from: selectedSquare, to: square, promotion: "q" });
+      setFen(chess.fen());
+    }
+
+    setSelectedSquare(null);
+    setLegalMoves([]);
+  };
+
   const isLegal = (row, col) => legalMoves.includes(toSquare(row, col));
 
+  // Move history
   const history = chess.history({ verbose: true });
   const pairedHistory = [];
   for (let i = 0; i < history.length; i += 2) {
@@ -128,6 +159,7 @@ export default function ChessBoard() {
               return (
                 <div
                   key={`${rowIndex}-${colIndex}`}
+                  onClick={() => handleSquareClick(rowIndex, colIndex)}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDrop(rowIndex, colIndex)}
                   style={{
