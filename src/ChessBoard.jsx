@@ -107,8 +107,28 @@ export default function ChessBoard() {
     const moveNumber = i / 2 + 1;
     const whiteMove = history[i]?.san || "";
     const blackMove = history[i + 1]?.san || "";
-    pairedHistory.push(`${moveNumber}. ${whiteMove}${blackMove ? " " + blackMove : ""}`);
+    pairedHistory.push(`${whiteMove}${blackMove ? " " + blackMove : ""}`);
   }
+
+  // Check highlighting
+  const kingPiece = chess.turn() === "w" ? "K" : "k";
+  const boardFEN = chess.fen().split(" ")[0].split("/");
+  let kingSquare = null;
+  for (let r = 0; r < 8; r++) {
+    let cIndex = 0;
+    for (const char of boardFEN[r]) {
+      if (!isNaN(char)) {
+        cIndex += parseInt(char);
+      } else {
+        if (char === kingPiece) {
+          kingSquare = "abcdefgh"[cIndex] + (8 - r);
+        }
+        cIndex++;
+      }
+    }
+  }
+  const inCheck = chess.isCheck();
+
 
   const bgColor = darkMode ? "#1c1c1c" : "#f5f5f5";
   const moveHistoryBg = darkMode ? "#2a2a2a" : "#ffffff";
@@ -155,6 +175,8 @@ export default function ChessBoard() {
             rowArr.map((piece, colIndex) => {
               const isBlue = (rowIndex + colIndex) % 2 === 0;
               const legalHighlight = isLegal(rowIndex, colIndex);
+              const squareName = toSquare(rowIndex, colIndex);
+              const isCheckSquare = inCheck && kingSquare === squareName;
 
               return (
                 <div
@@ -170,7 +192,7 @@ export default function ChessBoard() {
                     justifyContent: "center",
                     alignItems: "center",
                     position: "relative",
-                    border: "1px solid gray",
+                    border: isCheckSquare ? "3px solid red" : "1px solid gray",
                   }}
                 >
                   {piece && (
@@ -273,6 +295,22 @@ export default function ChessBoard() {
           {darkMode ? "Light Mode" : "Dark Mode"}
         </button>
       </div>
+
+      {/* Checkmate Message */}
+      {chess.isCheckmate() && (
+ 
+        <div
+          style={{
+            marginTop: "20px",
+            fontSize: "22px",
+            fontWeight: "bold",
+            color: "red",
+            textAlign: "center",
+          }}
+        >
+          Checkmate! {chess.turn() === "w" ? "Black" : "White"} wins.
+        </div>
+      )}
     </div>
   );
 }
