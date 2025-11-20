@@ -6,13 +6,9 @@ export default function ChessBoard() {
   const chess = chessRef.current;
 
   const [fen, setFen] = useState(chess.fen());
-  const [selected, setSelected] = useState(null);
   const [legalMoves, setLegalMoves] = useState([]);
-  const [darkMode, setDarkMode] = useState(true);
-
-  // Drag state
-  const [draggingPiece, setDraggingPiece] = useState(null);
   const [draggingSquare, setDraggingSquare] = useState(null);
+  const [darkMode, setDarkMode] = useState(true);
 
   const pieceImages = {
     P: "https://chessboardjs.com/img/chesspieces/wikipedia/wP.png",
@@ -56,7 +52,6 @@ export default function ChessBoard() {
     const turn = chess.turn();
     if ((turn === "w" && pieceLetter === pieceLetter.toUpperCase()) ||
         (turn === "b" && pieceLetter === pieceLetter.toLowerCase())) {
-      setDraggingPiece(piece);
       setDraggingSquare(square);
       const moves = chess.moves({ square, verbose: true }).map(m => m.to);
       setLegalMoves(moves);
@@ -69,14 +64,12 @@ export default function ChessBoard() {
       chess.move({ from: draggingSquare, to: targetSquare, promotion: "q" });
       setFen(chess.fen());
     }
-    setDraggingPiece(null);
     setDraggingSquare(null);
     setLegalMoves([]);
   };
 
   const isLegal = (row, col) => legalMoves.includes(toSquare(row, col));
 
-  // Paired move history
   const history = chess.history({ verbose: true });
   const pairedHistory = [];
   for (let i = 0; i < history.length; i += 2) {
@@ -86,7 +79,6 @@ export default function ChessBoard() {
     pairedHistory.push(`${moveNumber}. ${whiteMove}${blackMove ? " " + blackMove : ""}`);
   }
 
-  // Dark mode colors (only UI, not board)
   const bgColor = darkMode ? "#1c1c1c" : "#f5f5f5";
   const moveHistoryBg = darkMode ? "#2a2a2a" : "#ffffff";
   const textColor = darkMode ? "#ffffff" : "#000000";
@@ -105,32 +97,32 @@ export default function ChessBoard() {
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          alignItems: "flex-start",
           gap: "20px",
           boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
-          padding: "10px",
+          padding: "20px",
           borderRadius: "12px",
           backgroundColor: darkMode ? "#2b2b2b" : "#f5f5f5",
           width: "100%",
-          maxWidth: "480px",
+          maxWidth: "1000px",
         }}
       >
         {/* Chessboard */}
         <div
           style={{
-            width: "100%",
+            width: "min(480px, 90vw)",
             aspectRatio: "1/1",
             display: "grid",
             gridTemplateRows: "repeat(8, 1fr)",
             gridTemplateColumns: "repeat(8, 1fr)",
-            position: "relative",
           }}
         >
           {board.map((rowArr, rowIndex) =>
             rowArr.map((piece, colIndex) => {
               const isBlue = (rowIndex + colIndex) % 2 === 0;
-              const square = toSquare(rowIndex, colIndex);
               const legalHighlight = isLegal(rowIndex, colIndex);
 
               return (
@@ -138,25 +130,30 @@ export default function ChessBoard() {
                   key={`${rowIndex}-${colIndex}`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => handleDrop(rowIndex, colIndex)}
-                  onDragStart={() => handleDragStart(rowIndex, colIndex)}
-                  draggable={!!piece}
                   style={{
                     width: "100%",
                     height: "100%",
                     backgroundColor: isBlue ? "#5084b2" : "#ffffff",
-                    border: "1px solid gray",
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
                     position: "relative",
+                    border: "1px solid gray",
                   }}
                 >
                   {piece && (
                     <img
                       src={piece}
                       alt=""
-                      draggable={false}
-                      style={{ width: "80%", height: "80%", maxWidth: "60px", maxHeight: "60px" }}
+                      draggable={true}
+                      onDragStart={() => handleDragStart(rowIndex, colIndex)}
+                      style={{
+                        width: "80%",
+                        height: "80%",
+                        maxWidth: "60px",
+                        maxHeight: "60px",
+                        cursor: "grab",
+                      }}
                     />
                   )}
                   {legalHighlight && !piece && (
@@ -170,7 +167,6 @@ export default function ChessBoard() {
                       }}
                     />
                   )}
-                  {/* Labels */}
                   {rowIndex === 7 && (
                     <div
                       style={{
@@ -208,13 +204,14 @@ export default function ChessBoard() {
         {/* Move History */}
         <div
           style={{
-            width: "100%",
+            flex: "1 1 200px",
+            minWidth: "180px",
+            maxHeight: "500px",
+            overflowY: "auto",
             backgroundColor: moveHistoryBg,
             padding: "10px",
             borderRadius: "8px",
             boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
-            maxHeight: "200px",
-            overflowY: "auto",
             color: textColor,
             fontFamily: "monospace",
           }}
@@ -238,6 +235,7 @@ export default function ChessBoard() {
             backgroundColor: darkMode ? "#ffffff" : "#1c1c1c",
             color: darkMode ? "#000000" : "#ffffff",
             fontWeight: "bold",
+            marginTop: "10px",
           }}
         >
           {darkMode ? "Light Mode" : "Dark Mode"}
